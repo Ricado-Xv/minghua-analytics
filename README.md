@@ -24,15 +24,32 @@
 │       └── 3月月度汇总/
 ├── stores.json              # 店铺类型配置
 ├── src/
-│   ├── config.py           # 路径配置
-│   ├── data_loader.py     # 数据加载模块
-│   ├── generators.py      # 报表生成模块
-│   ├── report_viewer.py   # Web 查看器
-│   ├── weekly_report.py   # 周报生成入口
+│   ├── config_template.py  # 配置示例（复制为 config.py 使用）
+│   ├── data_loader.py      # 数据加载模块
+│   ├── generators.py        # 报表生成模块
+│   ├── report_viewer.py     # Web 查看器
+│   ├── weekly_report.py     # 周报生成入口
 │   └── templates/
-│       ├── template.html  # HTML 模板
-│       └── viewer.js     # 前端 JS
-└── run_viewer.py          # 启动脚本（自动生成报表）
+│       ├── template.html    # HTML 模板
+│       └── viewer.js       # 前端 JS
+└── run_viewer.py           # 启动脚本（自动生成报表）
+```
+
+## 初始化配置
+
+1. 复制配置模板：
+```bash
+cp src/config_template.py src/config.py
+```
+
+2. 根据需要修改 `src/config.py`：
+```python
+from pathlib import Path
+
+# 路径配置
+BASE_DIR = Path(__file__).parent.parent
+DATA_DIR = BASE_DIR / 'data'
+REPORTS_DIR = BASE_DIR / 'reports'
 ```
 
 ## 店铺类型配置
