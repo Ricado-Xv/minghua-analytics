@@ -48,8 +48,8 @@ from pathlib import Path
 
 # 路径配置
 BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / 'data'
-REPORTS_DIR = BASE_DIR / 'reports'
+DATA_DIR = BASE_DIR / 'data'      # 原始Excel数据目录
+REPORTS_DIR = BASE_DIR / 'reports' # 生成的报表输出目录
 ```
 
 ## 店铺类型配置
@@ -58,12 +58,13 @@ REPORTS_DIR = BASE_DIR / 'reports'
 
 ```json
 {
-  "新石油": "加盟",
   "东大": "自营",
   "初创": "自营",
   "太白": "自营",
   "老综通道": "自营",
-  "茶坊": "自营"
+  "茶坊": "自营",
+  "新石油": "加盟",
+  "其他店铺": "自营"
 }
 ```
 
