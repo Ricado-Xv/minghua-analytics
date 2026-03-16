@@ -2,7 +2,7 @@
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
-from data_loader import sort_dates_numerically, load_week_data
+from data_loader import sort_dates_numerically, load_week_data, get_fruit_category
 from config import DATA_DIR, REPORTS_DIR
 
 # 设置中文显示
@@ -47,17 +47,24 @@ def generate_store_trend(all_data):
 
 
 def generate_fruit_purchase_summary(all_data):
-    """生成各水果进货汇总"""
-    records = []
+    """生成各水果进货汇总（按分类合并）"""
+    all_records = []
+    date_cols = []
+    
     for data in all_data:
         df = data['detail']
-        df_valid = df[df['总价'] > 0]
+        df_valid = df[df['总价'] > 0].copy()
+        # 应用水果分类映射
+        df_valid['水果'] = df_valid['水果'].apply(get_fruit_category)
+        # 按水果分类汇总
         fruit_sum = df_valid.groupby('水果').agg({'数量': 'sum', '总价': 'sum'}).reset_index()
         fruit_sum['日期'] = data['filename']
-        records.append(fruit_sum)
+        all_records.append(fruit_sum)
+        date_cols.append(data['filename'])
     
-    df = pd.concat(records, ignore_index=True)
+    df = pd.concat(all_records, ignore_index=True)
     
+    # 透视表：按日期展开
     pivot_qty = df.pivot(index='水果', columns='日期', values='数量').fillna(0)
     pivot_amount = df.pivot(index='水果', columns='日期', values='总价').fillna(0)
     
@@ -69,7 +76,6 @@ def generate_fruit_purchase_summary(all_data):
     
     result = result.merge(amount_df, on='水果', how='outer').fillna(0)
     
-    date_cols = [d['filename'] for d in all_data]
     amount_cols = [f'{d}_额' for d in date_cols]
     result['波动系数%'] = (result[amount_cols].std(axis=1) / result[amount_cols].mean(axis=1) * 100).round(1)
     result.loc[result[amount_cols].mean(axis=1) == 0, '波动系数%'] = 0
