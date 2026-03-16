@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>茗花智能汇报系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+    .app-container { display: flex; flex-direction: column; height: 100vh; }
+    .app-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .app-header h1 { font-size: 24px; }
+    .header-actions { display: flex; gap: 12px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .btn-secondary { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); }
+    .app-main { display: flex; flex: 1; overflow: hidden; }
+    .chat-section { width: 400px; border-right: 1px solid #e0e0e0; background: white; display: flex; flex-direction: column; }
+    .result-section { flex: 1; background: #f9f9f9; overflow: auto; padding: 20px; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 16px; }
+    .chat-input { display: flex; gap: 8px; padding: 16px; border-top: 1px solid #e0e0e0; }
+    .chat-input input { flex: 1; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 24px; font-size: 14px; outline: none; }
+    .chat-input input:focus { border-color: #667eea; }
+    .btn-send { width: 44px; height: 44px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 18px; cursor: pointer; }
+    .message { display: flex; gap: 12px; margin-bottom: 16px; }
+    .message.user { flex-direction: row-reverse; }
+    .message-avatar { font-size: 24px; }
+    .message-text { padding: 12px 16px; border-radius: 12px; max-width: 80%; word-break: break-word; }
+    .user .message-text { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .ai .message-text { background: white; border: 1px solid #e0e0e0; }
+    .welcome-message { text-align: center; padding: 40px; color: #666; }
+    .welcome-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .result-content { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .result-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
+    .summary-card { background: linear-gradient(135deg, #f5f7fa, #e4e8ec); border-radius: 12px; padding: 20px; text-align: center; }
+    .card-icon { font-size: 28px; margin-bottom: 8px; }
+    .card-value { font-size: 24px; font-weight: 700; color: #333; }
+    .card-label { font-size: 12px; color: #666; }
+    .data-section { padding: 0 20px 20px; }
+    .data-section h4 { font-size: 16px; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #667eea; }
+    .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .data-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #667eea; }
+    .data-table td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+    .data-table tr:hover { background: #f8f9ff; }
+    .report-text { padding: 20px; }
+    .report-text h4 { font-size: 16px; margin-bottom: 12px; }
+    .report-text pre { background: #f8f9fa; padding: 16px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>🌸 茗花智能汇报系统</h1>
+    </header>
+    <main class="app-main">
+      <div class="chat-section">
+        <div class="chat-messages" id="messages">
+          <div class="welcome-message">
+            <div class="welcome-icon">🌸</div>
+            <h3>欢迎使用茗花智能汇报系统</h3>
+            <p>我可以帮您查看周报，月度报告，分析数据等</p>
+            <p style="margin-top: 20px;">试试对我说："查看周报"</p>
+          </div>
+        </div>
+        <div class="chat-input">
+          <input type="text" id="messageInput" placeholder="输入您的问题..." onkeyup="if(event.key==='Enter')sendMessage()">
+          <button class="btn-send" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+      <div class="result-section" id="resultSection">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>结果展示区</h3>
+          <p>发送消息后，这里将展示分析结果</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const API_BASE = '';
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return;
+      
+      addMessage(message, 'user');
+      input.value = '';
+      
+      try {
+        const res = await fetch(API_BASE + '/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message})
+        });
+        const data = await res.json();
+        addMessage(data.reply, 'ai');
+        renderResult(data);
+      } catch (e) {
+        addMessage('出错: ' + e.message, 'ai');
+      }
+    }
+    
+    function addMessage(text, type) {
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.innerHTML = `<div class="message-avatar">${type==='user'?'👤':'🤖'}</div><div class="message-text">${text}</div>`;
+      document.getElementById('messages').appendChild(div);
+      div.scrollIntoView();
+    }
+    
+    function formatNum(n) {
+      if (n === undefined || n === null) return '-';
+      if (typeof n === 'number') return n.toLocaleString('zh-CN', {maximumFractionDigits: 2});
+      return n;
+    }
+    
+    function renderResult(data) {
+      const section = document.getElementById('resultSection');
+      if (!data.data) {
+        section.innerHTML = '<div class="empty-state"><p>' + data.reply + '</p></div>';
+        return;
+      }
+      
+      let html = '<div class="result-content">';
+      html += '<div class="result-header"><span>📈 ' + data.intent + '</span></div>';
+      
+      // 周报/月报统计卡片
+      if (data.data.summary) {
+        const s = data.data.summary;
+        html += '<div class="summary-cards">';
+        html += '<div class="summary-card"><div class="card-icon">🏪</div><div class="card-value">' + (s['店铺数']||'-') + '</div><div class="card-label">店铺数</div></div>';
+        html += '<div class="summary-card"><div class="card-icon">🍎</div><div class="card-value">' + (s['水果种类']||'-') + '</div><div class="card-label">水果种类</div></div>';
+        html += '<div class="summary-card"><div class="card-icon">📦</div><div class="card-value">' + formatNum(s['总进货量']) + '</div><div class="card-label">总进货量</div></div>';
+        html += '<div class="summary-card"><div class="card-icon">💰</div><div class="card-value">¥' + formatNum(s['总进货额']) + '</div><div class="card-label">总进货额</div></div>';
+        html += '</div>';
+      }
+      
+      // 跨周对比统计卡片
+      if (data.data.type === 'cross_week') {
+        const report = data.data.report || '';
+        
+        // 解析报告中的数据
+        let w1_qty='-', w1_amt='-', w2_qty='-', w2_amt='-';
+        let trendVal='0', trendPct='0';
+        let ziying='-', jiameng='-';
+        
+        // 第一周数据
+        let m = report.match(/3月第一周[^计]*计[：:]([0-9.]+)斤[^¥]*¥([0-9.]+)/);
+        if (m) { w1_qty = m[1]; w1_amt = m[2]; }
+        
+        // 第二周数据
+        m = report.match(/3月第二周[^计]*计[：:]([0-9.]+)斤[^¥]*¥([0-9.]+)/);
+        if (m) { w2_qty = m[1]; w2_amt = m[2]; }
+        
+        // 环比变化
+        m = report.match(/总计[：:]¥([+-]?[0-9.]+)[^\(]*\(([+-]?[0-9.]+)%\)/);
+        if (m) { trendVal = m[1]; trendPct = m[2]; }
+        
+        // 自营
+        m = report.match(/自营[：:]¥([0-9.]+)/);
+        if (m) { ziying = m[1]; }
+        
+        // 加盟
+        m = report.match(/加盟[：:]¥([0-9.]+)/);
+        if (m) { jiameng = m[1]; }
+        
+        const isUp = parseFloat(trendVal) >= 0;
+        
+        // 两周对比
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px 20px 0;">';
+        html += '<div style="background:#f5f5f5;border-radius:12px;padding:16px;text-align:center;">';
+        html += '<div style="font-size:12px;color:#666;margin-bottom:8px;">第一周</div>';
+        html += '<div style="font-size:20px;font-weight:700;">' + w1_qty + '斤</div>';
+        html += '<div style="color:#666;">¥' + w1_amt + '</div></div>';
+        
+        html += '<div style="background:#e8f4ff;border-radius:12px;padding:16px;text-align:center;">';
+        html += '<div style="font-size:12px;color:#666;margin-bottom:8px;">第二周</div>';
+        html += '<div style="font-size:20px;font-weight:700;">' + w2_qty + '斤</div>';
+        html += '<div style="color:#666;">¥' + w2_amt + '</div></div></div>';
+        
+        // 环比变化
+        const trendColor = isUp ? '#10b981' : '#ef4444';
+        const trendBg = isUp ? '#d1fae5' : '#fee2e2';
+        html += '<div style="margin:16px 20px;padding:16px;background:' + trendBg + ';border-radius:12px;text-align:center;">';
+        html += '<div style="font-size:24px;margin-bottom:8px;">' + (isUp ? '📈' : '📉') + '</div>';
+        html += '<div style="font-size:22px;font-weight:700;color:' + trendColor + ';">' + (isUp?'+':'') + trendVal + '元 (' + (isUp?'+':'') + trendPct + '%)</div>';
+        html += '<div style="font-size:12px;color:#666;margin-top:4px;">环比变化</div></div>';
+        
+        // 自营加盟
+        if (ziying !== '-' || jiameng !== '-') {
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px 20px;">';
+          html += '<div style="background:#fff3e0;border-radius:12px;padding:16px;text-align:center;">';
+          html += '<div style="font-size:24px;margin-bottom:4px;">🏭</div><div style="font-weight:600;">自营</div><div style="color:#e65100;font-size:16px;">¥' + ziying + '</div></div>';
+          html += '<div style="background:#e3f2fd;border-radius:12px;padding:16px;text-align:center;">';
+          html += '<div style="font-size:24px;margin-bottom:4px;">🔗</div><div style="font-weight:600;">加盟</div><div style="color:#1565c0;font-size:16px;">¥' + jiameng + '</div></div>';
+          html += '</div>';
+        }
+      }
+      
+      // 水果查询统计卡片
+      if (data.data.type === 'fruits' && data.data.data) {
+        const fruits = data.data.data;
+        let totalQty = 0, totalAmt = 0;
+        fruits.forEach(f => {
+          for (let k in f) {
+            if (k.endsWith('_量')) totalQty += f[k] || 0;
+            if (k.endsWith('_额')) totalAmt += f[k] || 0;
+          }
+        });
+        html += '<div class="summary-cards">';
+        html += '<div class="summary-card"><div class="card-icon">🍎</div><div class="card-value">' + fruits.length + '</div><div class="card-label">种水果</div></div>';
+        html += '<div class="summary-card"><div class="card-icon">📦</div><div class="card-value">' + formatNum(totalQty) + '</div><div class="card-label">斤</div></div>';
+        html += '<div class="summary-card"><div class="card-icon">💰</div><div class="card-value">¥' + formatNum(totalAmt) + '</div><div class="card-label">元</div></div>';
+        html += '</div>';
+      }
+      
+      // 店铺表格
+      if (data.data.stores && data.data.stores.length > 0) {
+        html += '<div class="data-section"><h4>🏪 店铺数据</h4><div class="table-wrapper"><table class="data-table"><tr><th>店铺</th><th>进货量</th><th>进货额</th></tr>';
+        for (const s of data.data.stores.slice(0, 10)) {
+          html += '<tr><td>' + (s['店铺']||'-') + '</td><td>' + formatNum(s['进货量(斤)']) + '</td><td>¥' + formatNum(s['进货额(元)']) + '</td></tr>';
+        }
+        html += '</table></div></div>';
+      }
+      
+      // 水果表格
+      if (data.data.type === 'fruits' && data.data.data && data.data.data.length > 0) {
+        const fruits = data.data.data;
+        // 获取所有日期列
+        const cols = Object.keys(fruits[0]).filter(k => k !== '水果' && k !== '波动系数%');
+        // 按日期分组显示
+        const dates = [...new Set(cols.map(c => c.split('_')[0]))];
+        
+        html += '<div class="data-section"><h4>🍎 水果数据</h4><div class="table-wrapper"><table class="data-table"><tr><th>水果</th>';
+        dates.forEach(d => { html += '<th colspan="2">' + d + '日</th>'; });
+        html += '<th>波动%</th></tr><tr><th></th>';
+        dates.forEach(d => { html += '<th>斤</th><th>元</th>'; });
+        html += '<th></th></tr>';
+        
+        for (const f of fruits) {
+          html += '<tr><td>' + f['水果'] + '</td>';
+          dates.forEach(d => { 
+            const qty = f[d+'_量'] || 0;
+            const amt = f[d+'_额'] || 0;
+            html += '<td>' + formatNum(qty) + '</td><td>¥' + formatNum(amt) + '</td>'; 
+          });
+          html += '<td>' + (f['波动系数%']||'-') + '%</td></tr>';
+        }
+        html += '</table></div></div>';
+      }
+      
+      // 报告
+      if (data.data.report) {
+        html += '<div class="report-text"><h4>📄 详细报告</h4><pre>' + data.data.report + '</pre></div>';
+      }
+      
+      html += '</div>';
+      section.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

@@ -23,6 +23,22 @@ def get_store_type(store_name):
             _store_type_map = {}
     return _store_type_map.get(store_name, '自营')
 
+# 加载水果分类配置
+FRUIT_CATEGORY_FILE = BASE_DIR.parent / 'fruits.json'
+_fruit_category_map = None
+
+def get_fruit_category(fruit_name):
+    """获取水果分类（如芒果A->芒果），默认返回原名称"""
+    global _fruit_category_map
+    if _fruit_category_map is None:
+        if FRUIT_CATEGORY_FILE.exists():
+            with open(FRUIT_CATEGORY_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                _fruit_category_map = data.get('水果分类映射', {})
+        else:
+            _fruit_category_map = {}
+    return _fruit_category_map.get(fruit_name, fruit_name)
+
 def sort_dates_numerically(dates):
     """按日期数值排序（如3.9 < 3.11）"""
     def date_key(s):

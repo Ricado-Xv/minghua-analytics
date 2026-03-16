@@ -1,8 +1,10 @@
 # 茗花项目
 
 # 排除数据文件（保留目录结构）
+data/*.xlsx
 data/**/*.xlsx
 data/**/*.txt
+data/*/
 
 # 排除报表输出
 reports/

@@ -1,0 +1,25 @@
+# 系统设置
+openclaw:
+  endpoint: "http://localhost:8080"
+  model: "default"
+  timeout: 60
+
+evolution:
+  default_trigger: "manual"
+  schedule:
+    enabled: false
+    cron: "0 9 * * *"
+
+conversation:
+  storage: "json"
+  retention_days: 30
+  export_limit: 50
+
+execution:
+  timeout: 30
+  allow_system_command: false
+
+server:
+  host: "0.0.0.0"
+  port: 3001
+  debug: false

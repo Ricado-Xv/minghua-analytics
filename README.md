@@ -1,169 +1,80 @@
-# 茗花汇报系统
+# 茗花智能汇报系统
 
-店铺进货与水果价格周报生成 + Web 查看器
+一个可自我进化的智能汇报 Web 应用。
 
-## 目录结构
+## 功能特性
 
-```
-茗花/
-├── data/                    # 原始数据目录
-│   ├── 3月/                # 月份目录
-│   │   └── 3月第一周/      # 周目录
-│   │       └── *.xlsx     # 原始数据文件
-│   └── ...
-├── reports/                 # 生成的报表目录（与data分离）
-│   ├── 3月/               # 月份目录
-│   │   ├── 3月第一周/
-│   │   │   └── 汇报/      # 周报文件
-│   │   └── 3月第二周/
-│   │       └── 汇报/
-│   ├── 跨周对比/           # 跨周对比
-│   │   ├── 3月跨周对比/
-│   │   └── 全局跨周对比_*.xlsx
-│   └── 月度汇总/           # 月度汇总
-│       └── 3月月度汇总/
-├── stores.json              # 店铺类型配置
-├── src/
-│   ├── config_template.py  # 配置示例（复制为 config.py 使用）
-│   ├── data_loader.py      # 数据加载模块
-│   ├── generators.py        # 报表生成模块
-│   ├── report_viewer.py     # Web 查看器
-│   ├── weekly_report.py     # 周报生成入口
-│   └── templates/
-│       ├── template.html    # HTML 模板
-│       └── viewer.js       # 前端 JS
-└── run_viewer.py           # 启动脚本（自动生成报表）
+### 智能对话
+- 自然语言查询：周报、月报、跨周对比、水果/店铺查询
+- 意图识别：支持"上一周周报"、"查看本月情况"等表达
+- 实时数据分析与可视化
+
+### 数据可视化
+- 统计卡片：店铺数、水果种类、总进货量、总进货额
+- 数据表格：店铺明细、水果明细
+- 跨周对比：两周数据对比、环比变化、自营vs加盟
+
+### 自我进化（开发中）
+- 记录用户对话
+- AI 分析需求，自动生成设计文档
+- 代码版本管理
+- 定时/手动触发进化
+
+### 安全机制
+- 目录级代码修改权限控制
+- 白名单/黑名单机制
+
+## 快速开始
+
+### 安装依赖
+
+```bash
+pip install -r requirements.txt
 ```
 
-## 初始化配置
+### 配置
 
-1. 复制配置模板：
 ```bash
 cp src/config_template.py src/config.py
 ```
 
-2. 根据需要修改 `src/config.py`：
-```python
-from pathlib import Path
-
-# 路径配置
-BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / 'data'      # 原始Excel数据目录
-REPORTS_DIR = BASE_DIR / 'reports' # 生成的报表输出目录
-```
-
-## 店铺类型配置
-
-在 `stores.json` 中配置店铺类型：
-
-```json
-{
-  "东大": "自营",
-  "初创": "自营",
-  "太白": "自营",
-  "老综通道": "自营",
-  "茶坊": "自营",
-  "新石油": "加盟",
-  "其他店铺": "自营"
-}
-```
-
-## 数据目录规范
-
-**原始数据（data/）：**
-```
-data/
-├── {月份}/                 # 如 "3月"
-│   ├── {周}/               # 如 "3月第一周"
-│   │   └── *.xlsx         # 原始数据文件
-│   └── ...
-```
-
-**生成的报表（reports/）：**
-```
-reports/
-├── {月份}/                 # 如 "3月"
-│   ├── {周}/               # 如 "3月第一周"
-│   │   └── 汇报/           # 生成的汇报
-│   └── ...
-├── 跨周对比/               # 跨周对比
-│   ├── {月份}跨周对比/     # 如 "3月跨周对比"
-│   └── 全局跨周对比_*.xlsx # 全局汇总
-└── 月度汇总/               # 月度汇总
-    └── {月份}月度汇总/     # 如 "3月月度汇总"
-```
-
-## 使用方法
-
-### 1. 启动 Web 查看器（自动生成报表）
+### 运行
 
 ```bash
-cd 茗花
-python3 run_viewer.py
-# 访问 http://localhost:8080
+# 原版
+python3 -m src.report_viewer 8080
+
+# 进化版
+python3 server.py
 ```
 
-### 2. 单独生成周报
+访问 http://localhost:8080 或 http://localhost:3001
 
-```bash
-cd 茗花
-python3 src/weekly_report.py
-```
+## 支持的指令
 
-## 跨周对比指标说明
-
-跨周对比报告包含以下指标（均按店铺类型区分）：
-
-| 指标 | 说明 |
+| 指令 | 说明 |
 |------|------|
-| 【每周整体情况】 | 每周总进货量/额，按自营/加盟分类 |
-| 【环比变化】 | 本周与上周对比，按自营/加盟分类 |
-| 【整体趋势】 | 首周vs末周趋势，按自营/加盟分类 |
-| 【平均周量】 | 周均进货量/额，按自营/加盟分类 |
-| 【日均进货金额对比】 | 每日平均进货金额，按自营/加盟分类 |
-| 【水果种类变化】 | 每周新增/减少的水果种类，按自营/加盟分类 |
-| 【水果金额环比变化】 | 水果金额环比TOP3，按自营/加盟分类 |
-| 【店铺金额环比变化】 | 店铺金额环比TOP3 |
+| 查看周报 | 本周数据汇总 |
+| 上一周周报 | 上一周数据 |
+| 查看本月情况 | 月度报告 |
+| 跨周对比 | 本月内周对比 |
+| 查询水果 | 水果销售数据 |
+| 查询店铺 | 店铺销售数据 |
 
-## 前端功能
+## 项目结构
 
-- **店铺类型筛选**：可选择"全部"、"自营"、"加盟"，实时筛选所有报表
-- **自动刷新**：启动时自动重新生成最新报表
+```
+src/                    # 原项目代码
+minghua_evo/           # 进化系统（独立模块）
+frontend/              # 前端
+data/                  # 数据目录
+fruits.json            # 水果分类配置
+stores.json            # 店铺类型配置
+server.py              # Web 服务入口
+```
 
-## 模块说明
+## 技术栈
 
-### src/config.py
-- 定义数据目录路径
-- `DATA_DIR` - 原始数据目录
-- `REPORTS_DIR` - 生成的报表目录
-
-### src/data_loader.py
-- `sort_dates_numerically(dates)` - 按日期数值排序
-- `get_all_excel_files()` - 获取所有 Excel 文件
-- `get_week_folders()` - 获取所有周文件夹
-- `get_month_folders()` - 获取所有月份文件夹
-- `load_week_data(week_folder)` - 加载单周数据
-- `get_store_type(store_name)` - 获取店铺类型（自营/加盟）
-
-### src/generators.py
-- `generate_store_summary()` - 各店铺进货汇总
-- `generate_store_trend()` - 各店铺进货趋势
-- `generate_fruit_purchase_summary()` - 各水果进货汇总
-- `generate_store_detail()` - 店铺详细明细
-- `generate_fruit_overall_summary()` - 水果整体汇总
-- `generate_txt_report()` - 生成Txt周报（含店铺类型标签）
-- `generate_cross_week_report()` - 生成跨周对比
-- `generate_monthly_report()` - 生成月度汇总
-- `generate_global_cross_week_report()` - 生成全局跨周对比
-
-### src/report_viewer.py
-- Web 服务器，提供 HTML 页面
-- 读取 `reports/` 目录动态生成页面
-- 支持店铺类型筛选
-
-## 拓展功能
-
-如需新增功能：
-1. 先读本 README 了解结构
-2. 在对应模块添加函数
-3. 更新 README 记录新功能
+- 后端：FastAPI + Python
+- 前端：HTML + JavaScript
+- 数据处理：Pandas

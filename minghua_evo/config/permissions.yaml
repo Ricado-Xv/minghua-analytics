@@ -1,0 +1,16 @@
+# 权限配置
+permissions:
+  src/core/:
+    level: "forbidden"
+  src/config.py:
+    level: "forbidden"
+  stores.json:
+    level: "forbidden"
+  src/features/:
+    level: "confirm"
+  src/reports/:
+    level: "confirm"
+  src/experiments/:
+    level: "auto"
+  minghua_evo/experiments/:
+    level: "auto"
