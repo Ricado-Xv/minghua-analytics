@@ -27,12 +27,7 @@
 
 **启动**：
 ```bash
-python3 src/report_viewer.py
-# 访问 http://localhost:8080
-```
-
-**数据 API**：
-```bash
+cd 茗花
 python3 src/data_api.py
 # API: http://localhost:8081
 ```
@@ -44,206 +39,179 @@ python3 src/data_api.py
 **定位**：通用智能对话助手框架
 
 **功能**：
-- 自然语言意图识别
-- 对话历史记录
-- 自动进化系统
+- 自然语言意图识别（分级识别：正则 → AI）
+- 用户反馈收集机制
+- 自我进化系统
 - 智能对话 Web 界面
 
 **启动**：
 ```bash
+cd 茗花by_claw
 python3 server.py
 # 访问 http://localhost:3001
 ```
 
-### 功能特性
+---
 
-#### 智能对话
-- 自然语言查询：周报、月报、跨周对比、水果/店铺查询
-- 意图识别：支持"上一周周报"、"查看本月情况"等表达
-- 实时数据分析与可视化
+## ✨ 核心特性
 
-#### 数据可视化
-- 统计卡片：店铺数、水果种类、总进货量、总进货额
-- 数据表格：店铺明细、水果明细
-- 跨周对比：两周数据对比、环比变化、自营vs加盟
+### 1. 智能意图识别
 
-#### 自我进化（开发中）
-- 记录用户对话
-- AI 分析需求，自动生成设计文档
-- 代码版本管理
-- 定时/手动触发进化
+采用**混合识别模式**：
 
-#### 安全机制
-- 目录级代码修改权限控制
-- 白名单/黑名单机制
+```
+用户输入
+    ↓
+┌─────────────────────────────────────┐
+│  第1层：闲聊过滤                    │
+│  匹配 greetings 关键词              │
+└─────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────┐
+│  第2层：正则匹配                    │
+│  匹配 intent_rules.yaml 规则        │
+│  置信度 > 0.8 → 直接返回           │
+└─────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────┐
+│  第3层：AI 识别                    │
+│  One-shot 模式，无记忆              │
+│  每次独立判断                       │
+└─────────────────────────────────────┘
+```
+
+**时间上下文感知**：
+- "上周" → 自动计算为当前周的上一周
+- "本月" → 自动识别当前月份
+- "上个月" → 自动计算为上个月
+
+### 2. 用户反馈机制
+
+每次识别结果后，用户可选择：
+- ✓ 正确 - 确认识别结果
+- ✗ 不准 - 提交期望的提问方式
+
+反馈数据存储在：`data/feedback/intent_feedback.json`
+
+### 3. 可进化架构
+
+- 意图规则解耦到配置文件
+- 支持自定义正则规则
+- 进化引擎可读取反馈改进规则
 
 ---
 
-## 🔗 插件解耦说明
-
-插件与原版完全解耦，可接入任意项目。
-
-### 架构图
-
-```
-原版                          进化插件
-┌─────────────┐              ┌─────────────┐
-│ data/       │              │ 意图识别    │
-│ reports/    │              │ 对话记录    │
-└─────────────┘              │ 进化引擎    │
-        │                    └─────────────┘
-        │ HTTP JSON                 ▲
-        ▼                           │
-┌─────────────┐                   │
-│ data_api.py │ ───────────────────┘
-│ (:8081)     │    数据客户端调用
-└─────────────┘
-```
-
-### 第三方接入
-
-只需提供符合规范的 HTTP JSON API：
-
-```yaml
-# config/settings.yaml
-data_api:
-  host: "http://your-api:8081"
-```
-
-#### API 端点
-
-| 端点 | 说明 |
-|------|------|
-| `GET /api/health` | 健康检查 |
-| `GET /api/weekly` | 周数据 |
-| `GET /api/stores` | 店铺列表 |
-| `GET /api/fruits` | 水果列表（可选） |
-| `GET /api/monthly` | 月度数据（可选） |
-| `GET /api/cross-week` | 跨周数据（可选） |
-
-#### 响应格式
-
-**周数据**
-```json
-{
-  "week": "第N周",
-  "month": "N月",
-  "summary": {
-    "店铺数": 6,
-    "水果种类": 8,
-    "总进货量": 1156.1,
-    "总进货额": 9865.35
-  },
-  "stores": [
-    {
-      "店铺": "店名A",
-      "进货量(斤)": 100.5,
-      "进货额(元)": 500.0,
-      "日期": "3.11",
-      "店铺类型": "自营"
-    }
-  ],
-  "fruit_stats": [
-    {
-      "水果": "苹果",
-      "进货量": 50,
-      "进货额": 200,
-      "波动系数": 15.2
-    }
-  ]
-}
-```
-
----
-
-## 📁 项目结构
+## 📁 目录结构
 
 ```
 茗花by_claw/
-├── src/                    # 原版代码（参考）
-│   ├── data_loader.py
-│   ├── generators.py
-│   ├── data_api.py         # 数据 API
-│   └── templates/
-├── minghua_evo/            # 进化插件（独立模块）
-│   ├── core/               # 核心引擎
-│   │   ├── intent_classifier.py
-│   │   ├── code_executor.py
-│   │   └── conversation_logger.py
-│   ├── services/           # 业务服务
-│   │   ├── data_provider.py
-│   │   └── evolution_engine.py
-│   ├── api/                # API 路由
-│   ├── config/             # 配置文件
-│   └── COUPLING_ANALYSIS.md # 解耦分析报告
-├── frontend/               # 前端
-├── data/                  # 数据目录
-├── reports/               # 报告目录
-├── fruits.json            # 水果分类配置
-├── stores.json            # 店铺类型配置
-└── server.py              # 服务入口
+├── README.md                 # 本文件
+├── server.py                 # 进化版服务入口
+├── minghua_evo/
+│   ├── core/
+│   │   ├── intent_classifier.py    # 意图识别器
+│   │   ├── code_executor.py        # 执行器
+│   │   ├── feedback_collector.py     # 反馈收集器
+│   │   └── conversation_logger.py   # 对话记录
+│   ├── services/
+│   │   ├── data_provider.py        # 数据客户端
+│   │   └── evolution_engine.py      # 进化引擎
+│   ├── api/
+│   │   └── routes.py               # API 路由
+│   ├── config/
+│   │   ├── settings.yaml           # 系统配置
+│   │   ├── intent_rules.yaml        # 意图规则 ⭐
+│   │   └── permissions.yaml        # 权限配置
+│   └── data/
+│       └── feedback/
+│           └── intent_feedback.json # 用户反馈 ⭐
+└── frontend/
+    └── dist/
+        └── index.html        # Web 前端
 ```
 
 ---
 
-## 🛠️ 快速开始
+## ⚙️ 配置说明
 
-### 安装依赖
+### 意图识别配置
 
-```bash
-pip install -r requirements.txt
+文件：`minghua_evo/config/intent_rules.yaml`
+
+```yaml
+# 意图规则
+rules:
+  VIEW_WEEKLY_REPORT:
+    keywords:
+      - 周报
+      - 本周
+      - 上周
+    patterns:
+      - "周报"
+      - "本周.*销售"
+
+# 闲聊过滤
+greetings:
+  - 你好
+  - 谢谢
+
+# 置信度阈值
+thresholds:
+  high: 0.8   # 直接返回
+  low: 0.5   # 走AI
 ```
 
-### 方式一：完整运行（推荐）
+### OpenClaw 配置
+
+文件：`minghua_evo/config/settings.yaml`
+
+```yaml
+intent_classifier:
+  use_ai: true
+  host: "http://127.0.0.1:18789"
+  agent: "test-agent"
+  timeout: 60
+```
+
+---
+
+## 🚦 快速开始
+
+### 1. 启动原版（数据 API）
 
 ```bash
-# 启动原版数据 API
 cd 茗花
-python3 src/data_api.py &
-
-# 启动进化版
-cd 茗花by_claw
-python3 server.py &
+python3 src/data_api.py
 ```
 
-访问：
-- 原版查看器：http://localhost:8080
-- 进化版：http://localhost:3001
-
-### 方式二：插件独立部署
+### 2. 启动进化版
 
 ```bash
-# 1. 修改配置
-vim minghua_evo/config/settings.yaml
+cd 茗花by_claw
+python3 server.py
+# 访问 http://localhost:3001
+```
 
-# 2. 启动
-python3 -c "
-from fastapi import FastAPI
-from minghua_evo.api import router
-import uvicorn
-app = FastAPI()
-app.include_router(router)
-uvicorn.run(app, host='0.0.0.0', port=3001)
-"
+### 3. 首次配置（可选）
+
+```bash
+# 创建测试 Agent
+openclaw agents add test-agent --workspace /path/to/茗花by_claw --model MiniMax-M2.5
 ```
 
 ---
 
-## 📖 支持的指令
+## 📖 API 接口
 
-| 指令 | 说明 |
-|------|------|
-| 查看周报 | 本周数据汇总 |
-| 上一周周报 | 上一周数据 |
-| 查看本月情况 | 月度报告 |
-| 跨周对比 | 本月内周对比 |
-| 查询水果 | 水果销售数据 |
-| 查询店铺 | 店铺销售数据 |
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/chat` | POST | 发送消息 |
+| `/api/feedback/intent` | POST | 提交反馈 |
+| `/api/feedback/intent` | GET | 获取反馈列表 |
+| `/api/evolve/trigger` | POST | 触发进化 |
 
 ---
 
-## 📊 技术栈
+## 🔧 意图识别模块详细设计
 
-- 后端：FastAPI + Python
-- 前端：HTML + JavaScript
-- 数据处理：Pandas
+见 `docs/软件设计文档.md` 第4节

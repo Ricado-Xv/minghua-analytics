@@ -81,13 +81,21 @@ class DataProvider:
         result = self._get('/api/weeks', params)
         return result.get('weeks', [])
     
-    def get_weekly_report(self, month: str = None, week: str = None) -> WeekData:
-        """获取周数据"""
+    def get_weekly_report(self, month: str = None, week: str = None, week_offset: int = 0) -> WeekData:
+        """获取周数据
+        
+        Args:
+            month: 月份（如 "3月"）
+            week: 周数（如 "第二周"）
+            week_offset: 相对本周的偏移量（0=本周, -1=上一周, 1=下一周）
+        """
         params = {}
         if month:
             params['month'] = month
         if week:
             params['week'] = week
+        if week_offset != 0:
+            params['week_offset'] = week_offset
         
         result = self._get('/api/weekly', params)
         

@@ -38,10 +38,19 @@ def handle_weekly_report(params: Dict, provider: DataProvider = None) -> Executi
                 error="API not available"
             )
         
-        # 获取周报数据
+        # 获取参数
         month = params.get("month")
         week = params.get("week")
-        week_data = provider.get_weekly_report(month=month, week=week)
+        week_offset = params.get("week_offset", 0)  # 0=本周, -1=上一周, 1=下一周
+        
+        # 转换数字周为中文周
+        if week:
+            cn_week_map = {"1": "第一周", "2": "第二周", "3": "第三周", "4": "第四周", "5": "第五周"}
+            week = cn_week_map.get(week, f"第{week}周")
+        
+        # 如果指定了 week_offset，需要计算实际周数
+        # 默认获取本周数据，如果week_offset为-1则获取上一周
+        week_data = provider.get_weekly_report(month=month, week=week, week_offset=week_offset)
         
         result_data = {
             "type": "weekly",
@@ -203,8 +212,38 @@ def handle_query_fruits(params: Dict, provider: DataProvider = None) -> Executio
         return ExecutionResult(success=False, data=None, reply=f"查询水果数据出错：{str(e)}", error=str(e))
 
 
-def handle_custom(params: Dict, provider: DataProvider = None) -> ExecutionResult:
-    raw = params.get("raw", "")
+def handle_custom(params: Dict, provider: DataProvider = None, raw_message: str = "") -> ExecutionResult:
+    # 优先使用 raw_message，其次使用 params.get("raw")
+    raw = raw_message or params.get("raw", "")
+    
+    # 检查是否是闲聊
+    if params.get("is_greeting"):
+        greetings = {
+            "你好": "你好！有什么可以帮你的吗？",
+            "您好": "您好！有什么可以帮你的吗？",
+            "hi": "Hi！有什么可以帮你的吗？",
+            "hello": "Hello！有什么可以帮你的吗？",
+            "早上好": "早上好！今天想查点什么？",
+            "下午好": "下午好！想了解什么数据？",
+            "晚上好": "晚上好！需要查点什么？",
+            "晚安": "晚安！好梦！",
+            "谢谢": "不客气！",
+            "感谢": "不客气！",
+            "辛苦了": "不客气，应该的！",
+            "拜拜": "再见，有需要随时叫我！",
+            "再见": "再见，有需要随时叫我！",
+            "好的": "收到！",
+            "收到": "收到！",
+            "明白": "明白！",
+            "了解": "了解！",
+        }
+        reply = greetings.get(raw, f"{raw}！有什么可以帮你的吗？")
+        return ExecutionResult(
+            success=True,
+            data={"type": "greeting"},
+            reply=reply,
+            render_type="text"
+        )
     
     if "店铺" in raw or "门店" in raw:
         return handle_query_stores({"raw": raw}, provider)
@@ -249,8 +288,9 @@ class CodeExecutor:
     def register_handler(self, intent_type: str, handler: Callable):
         self.handlers[intent_type] = handler
 
-    def execute(self, intent_type: str, params: Dict = None) -> ExecutionResult:
+    def execute(self, intent_type: str, params: Dict = None, raw_message: str = None) -> ExecutionResult:
         params = params or {}
+        raw_message = raw_message or ""
         handler = self.handlers.get(intent_type)
         if not handler:
             return ExecutionResult(
@@ -262,7 +302,11 @@ class CodeExecutor:
 
         try:
             provider = self._get_provider()
-            result = handler(params, provider)
+            # 传递 raw_message 给 handler
+            if "raw_message" in handler.__code__.co_varnames:
+                result = handler(params, provider, raw_message)
+            else:
+                result = handler(params, provider)
             return result
         except Exception as e:
             return ExecutionResult(success=False, data=None, reply=f"执行出错：{str(e)}", error=str(e))

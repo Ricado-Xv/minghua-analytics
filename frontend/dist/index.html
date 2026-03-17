@@ -25,8 +25,43 @@
     .message.user { flex-direction: row-reverse; }
     .message-avatar { font-size: 24px; }
     .message-text { padding: 12px 16px; border-radius: 12px; max-width: 80%; word-break: break-word; }
+    .message-content { display: flex; flex-direction: column; gap: 8px; }
     .user .message-text { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
     .ai .message-text { background: white; border: 1px solid #e0e0e0; }
+    
+    /* 反馈按钮样式 */
+    .feedback-buttons { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-feedback { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-correct { background: #4CAF50; color: white; }
+    .btn-correct:hover { background: #45a049; }
+    .btn-wrong { background: #f44336; color: white; }
+    .btn-wrong:hover { background: #da190b; }
+    .btn-submit { background: #2196F3; color: white; }
+    .btn-submit:hover { background: #1976D2; }
+    
+    .feedback-form { display: flex; flex-direction: column; gap: 6px; }
+    .feedback-hint { font-size: 12px; color: #666; font-weight: 500; }
+    .feedback-input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+    .feedback-input:focus { border-color: #667eea; outline: none; }
+    .feedback-examples { font-size: 11px; color: #999; margin-top: 4px; }
+    .feedback-result { padding: 8px; border-radius: 4px; font-size: 12px; }
+    .feedback-result.success { background: #e8f5e9; color: #2e7d32; }
+    .feedback-result.error { background: #ffebee; color: #c62828; }
+    
+    /* 反馈面板 */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.active { display: flex; }
+    .feedback-panel { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+    .feedback-panel-header { padding: 16px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .feedback-panel-header h2 { font-size: 18px; margin: 0; }
+    .feedback-panel-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+    .feedback-panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .feedback-item { border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .feedback-item-header { display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-bottom: 8px; }
+    .feedback-item-content { font-size: 14px; }
+    .feedback-item-label { color: #666; margin-right: 8px; }
+    .feedback-item-value { color: #333; font-weight: 500; }
+    .feedback-empty { text-align: center; color: #999; padding: 40px; }
     .welcome-message { text-align: center; padding: 40px; color: #666; }
     .welcome-icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; }
@@ -54,6 +89,9 @@
   <div class="app-container">
     <header class="app-header">
       <h1>🌸 茗花智能汇报系统</h1>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="showFeedbackPanel()">📝 反馈记录</button>
+      </div>
     </header>
     <main class="app-main">
       <div class="chat-section">
@@ -81,11 +119,15 @@
   </div>
   <script>
     const API_BASE = '';
+    let lastUserMessage = '';
+    let lastAiIntent = '';
+    
     async function sendMessage() {
       const input = document.getElementById('messageInput');
       const message = input.value.trim();
       if (!message) return;
       
+      lastUserMessage = message;  // 保存用户输入
       addMessage(message, 'user');
       input.value = '';
       
@@ -96,10 +138,109 @@
           body: JSON.stringify({message})
         });
         const data = await res.json();
-        addMessage(data.reply, 'ai');
+        
+        lastAiIntent = data.intent;  // 保存AI识别结果
+        
+        // 添加消息 + 反馈按钮
+        addMessageWithFeedback(data.reply, 'ai', data.intent);
         renderResult(data);
       } catch (e) {
         addMessage('出错: ' + e.message, 'ai');
+      }
+    }
+    
+    // 添加带反馈按钮的消息
+    function addMessageWithFeedback(text, type, intent) {
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      
+      let html = `<div class="message-avatar">${type==='user'?'👤':'🤖'}</div>`;
+      html += `<div class="message-content">`;
+      html += `<div class="message-text">${text}</div>`;
+      
+      // AI 消息显示反馈按钮
+      if (type === 'ai') {
+        html += `<div class="feedback-buttons" id="feedback-${Date.now()}">`;
+        html += `<button class="btn-feedback btn-correct" onclick="submitFeedback(true)">✓ 正确</button>`;
+        html += `<button class="btn-feedback btn-wrong" onclick="showFeedbackForm()">✗ 不准</button>`;
+        html += `</div>`;
+      }
+      
+      html += `</div>`;
+      div.innerHTML = html;
+      document.getElementById('messages').appendChild(div);
+      div.scrollIntoView();
+    }
+    
+    // 提交正确反馈
+    async function submitFeedback(correct) {
+      if (!lastAiIntent) return;
+      
+      try {
+        await fetch(API_BASE + '/api/feedback/intent', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            message: lastUserMessage,
+            ai_intent: lastAiIntent,
+            correct_intent: lastAiIntent,
+            comment: '用户确认正确'
+          })
+        });
+        showFeedbackResult('✓ 感谢反馈！识别已记录', true);
+      } catch (e) {
+        showFeedbackResult('反馈失败', false);
+      }
+    }
+    
+    // 显示反馈表单
+    function showFeedbackForm() {
+      const container = event.target.parentElement;
+      container.innerHTML = `
+        <div class="feedback-form">
+          <div class="feedback-hint">如何改进识别？</div>
+          <input type="text" id="correctMessage" placeholder="应该怎么问？" class="feedback-input">
+          <input type="text" id="feedbackComment" placeholder="备注（可选）" class="feedback-input">
+          <button class="btn-feedback btn-submit" onclick="submitWrongFeedback()">提交</button>
+          <div class="feedback-examples">
+            常见意图：周报、月报、店铺、水果、跨周对比
+          </div>
+        </div>
+      `;
+    }
+    
+    // 提交错误反馈 - 让AI重新识别用户想要的输入
+    async function submitWrongFeedback() {
+      const correctMessage = document.getElementById('correctMessage').value.trim();
+      const comment = document.getElementById('feedbackComment').value.trim();
+      
+      if (!correctMessage) {
+        alert('请输入您想怎么问');
+        return;
+      }
+      
+      try {
+        await fetch(API_BASE + '/api/feedback/intent', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            message: lastUserMessage,
+            ai_intent: lastAiIntent,
+            user_input: correctMessage,  // 用户想要这样问
+            comment: comment || null
+          })
+        });
+        showFeedbackResult('✓ 感谢反馈！已记录您期望的提问方式', true);
+      } catch (e) {
+        showFeedbackResult('反馈失败: ' + e.message, false);
+      }
+    }
+    
+    // 显示反馈结果
+    function showFeedbackResult(msg, success) {
+      const forms = document.querySelectorAll('.feedback-form');
+      if (forms.length > 0) {
+        forms[forms.length - 1].innerHTML = `<div class="feedback-result ${success?'success':'error'}">${msg}</div>`;
       }
     }
     
@@ -260,6 +401,64 @@
       html += '</div>';
       section.innerHTML = html;
     }
+    
+    // 反馈面板
+    async function showFeedbackPanel() {
+      const modal = document.getElementById('feedbackModal');
+      modal.classList.add('active');
+      loadFeedbacks();
+    }
+    
+    function closeFeedbackPanel() {
+      const modal = document.getElementById('feedbackModal');
+      modal.classList.remove('active');
+    }
+    
+    async function loadFeedbacks() {
+      const container = document.getElementById('feedbackList');
+      container.innerHTML = '<div class="feedback-empty">加载中...</div>';
+      
+      try {
+        const res = await fetch(API_BASE + '/api/feedback/intent');
+        const data = await res.json();
+        
+        if (!data.feedbacks || data.feedbacks.length === 0) {
+          container.innerHTML = '<div class="feedback-empty">暂无反馈记录</div>';
+          return;
+        }
+        
+        container.innerHTML = data.feedbacks.map(f => `
+          <div class="feedback-item">
+            <div class="feedback-item-header">
+              <span>${f.timestamp ? f.timestamp.substring(0, 19).replace('T', ' ') : ''}</span>
+              <span>AI识别: ${f.ai_intent}</span>
+            </div>
+            <div class="feedback-item-content">
+              <div><span class="feedback-item-label">原输入:</span><span class="feedback-item-value">${f.message || '-'}</span></div>
+              ${f.user_input ? `<div><span class="feedback-item-label">用户期望:</span><span class="feedback-item-value">${f.user_input}</span></div>` : ''}
+              ${f.correct_intent ? `<div><span class="feedback-item-label">正确意图:</span><span class="feedback-item-value">${f.correct_intent}</span></div>` : ''}
+              ${f.comment ? `<div><span class="feedback-item-label">备注:</span><span class="feedback-item-value">${f.comment}</span></div>` : ''}
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (e) {
+        container.innerHTML = '<div class="feedback-empty">加载失败: ' + e.message + '</div>';
+      }
+    }
   </script>
+  
+  <!-- 反馈面板 Modal -->
+  <div class="modal-overlay" id="feedbackModal">
+    <div class="feedback-panel">
+      <div class="feedback-panel-header">
+        <h2>📝 意图识别反馈记录</h2>
+        <button class="feedback-panel-close" onclick="closeFeedbackPanel()">×</button>
+      </div>
+      <div class="feedback-panel-body" id="feedbackList">
+        <div class="feedback-empty">点击加载</div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

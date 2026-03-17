@@ -79,7 +79,7 @@ async def chat(request: ChatRequest):
     logger = get_logger()
 
     intent = classifier.classify(request.message)
-    result = executor.execute(intent.type.value, intent.params)
+    result = executor.execute(intent.type.value, intent.params, intent.raw_message)
 
     logger.log(user_message=request.message, intent=intent.type.value, params=intent.params, reply=result.reply, success=result.success)
 
@@ -148,3 +148,59 @@ async def get_permissions():
     engine = get_engine()
     permissions = engine.permissions.get_all_permissions()
     return {"permissions": permissions}
+
+
+# ========================================
+# 意图反馈 API
+# ========================================
+
+class IntentFeedbackRequest(BaseModel):
+    message: str  # 原始用户输入
+    ai_intent: str  # AI 识别结果
+    correct_intent: Optional[str] = None  # 正确意图（可选）
+    user_input: Optional[str] = None  # 用户自定义输入（可选）
+    comment: Optional[str] = None  # 备注
+
+
+@router.post("/api/feedback/intent")
+async def submit_intent_feedback(request: IntentFeedbackRequest):
+    """提交意图识别反馈"""
+    from minghua_evo.core.feedback_collector import get_collector
+    
+    collector = get_collector()
+    
+    # 使用用户自定义输入覆盖原始输入
+    effective_message = request.user_input if request.user_input else request.message
+    
+    success = collector.add_feedback(
+        message=effective_message,
+        ai_intent=request.ai_intent,
+        correct_intent=request.correct_intent,
+        user_input=request.user_input,
+        comment=request.comment
+    )
+    
+    if success:
+        return {"status": "ok", "message": "反馈已记录"}
+    else:
+        raise HTTPException(status_code=500, detail="反馈保存失败")
+
+
+@router.get("/api/feedback/intent")
+async def get_intent_feedbacks():
+    """获取所有意图反馈"""
+    from minghua_evo.core.feedback_collector import get_collector
+    
+    collector = get_collector()
+    feedbacks = collector.get_feedbacks()
+    return {"feedbacks": feedbacks}
+
+
+@router.delete("/api/feedback/intent")
+async def clear_intent_feedbacks():
+    """清空所有反馈"""
+    from minghua_evo.core.feedback_collector import get_collector
+    
+    collector = get_collector()
+    collector.clear()
+    return {"status": "ok", "message": "反馈已清空"}

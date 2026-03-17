@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-17T23:40:32.785146",
+    "message": "查看3月第一周数据",
+    "ai_intent": "CUSTOM",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "user_input": "查看3月第一周数据",
+    "comment": "应该识别为周报"
+  },
+  {
+    "timestamp": "2026-03-17T23:48:39.317954",
+    "message": "上个月的数据分析",
+    "ai_intent": "VIEW_MONTHLY_REPORT",
+    "correct_intent": "上个月的月报"
+  }
+]
