@@ -192,16 +192,24 @@ python3 server.py
 # 访问 http://localhost:3001
 ```
 
-### 3. 首次配置（可选）
+### 3. 首次配置（必须）
+
+AI 意图识别需要独立的 test-agent：
 
 ```bash
-# 创建测试 Agent（workspace 指向插件目录）
-openclaw agents add test-agent --workspace /path/to/茗花by_claw/minghua_evo --model MiniMax-M2.5
+# 在项目根目录执行（会自动删除已存在的 test-agent）
+cd /path/to/茗花by_claw
 
-# 这样 agent 可以访问：
-# - 插件代码（当前目录）
-# - 宿主项目（../）
+# 创建 test-agent，workspace 指向插件目录
+openclaw agents delete test-agent --force 2>/dev/null
+openclaw agents add test-agent --workspace ./minghua_evo --model MiniMax-M2.5
 ```
+
+**test-agent 配置说明：**
+- workspace: `minghua_evo/` （插件目录）
+- 可访问插件代码（当前目录）
+- 可访问宿主项目（`../src/`）
+- 用途：意图识别的 AI 识别功能
 
 **说明**：test-agent 的 workspace 设置为 `minghua_evo/` 目录，可通过 `../` 访问宿主项目（如 `../src/`）。
 
