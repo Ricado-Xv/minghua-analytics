@@ -204,3 +204,76 @@ async def clear_intent_feedbacks():
     collector = get_collector()
     collector.clear()
     return {"status": "ok", "message": "反馈已清空"}
+
+
+# ========================================
+# 反馈进化 API
+# ========================================
+
+@router.post("/api/evolve/feedback")
+async def evolve_from_feedback():
+    """从用户反馈生成需求设计文档"""
+    from minghua_evo.core.feedback_analyzer import FeedbackAnalyzer
+    
+    analyzer = FeedbackAnalyzer()
+    result = analyzer.evolve()
+    
+    return result
+
+
+# ========================================
+# 设计文档管理 API
+# ========================================
+
+class DesignDocRequest(BaseModel):
+    filename: str
+    reason: Optional[str] = None
+
+
+@router.get("/api/design/docs")
+async def list_design_docs():
+    """列出所有设计文档"""
+    from minghua_evo.core.design_doc_manager import DesignDocumentManager
+    
+    manager = DesignDocumentManager()
+    docs = manager.list_documents()
+    return {"documents": docs}
+
+
+@router.post("/api/design/docs/confirm")
+async def confirm_design_doc(request: DesignDocRequest):
+    """确认设计文档"""
+    from minghua_evo.core.design_doc_manager import DesignDocumentManager
+    
+    manager = DesignDocumentManager()
+    success = manager.confirm_document(request.filename)
+    
+    if success:
+        return {"status": "ok", "message": f"已确认: {request.filename}"}
+    else:
+        raise HTTPException(status_code=404, detail="文档不存在")
+
+
+@router.post("/api/design/docs/reject")
+async def reject_design_doc(request: DesignDocRequest):
+    """驳回设计文档"""
+    from minghua_evo.core.design_doc_manager import DesignDocumentManager
+    
+    manager = DesignDocumentManager()
+    success = manager.reject_document(request.filename, request.reason or "")
+    
+    if success:
+        return {"status": "ok", "message": f"已驳回: {request.filename}"}
+    else:
+        raise HTTPException(status_code=404, detail="文档不存在")
+
+
+@router.post("/api/design/docs/execute")
+async def execute_design_doc(request: DesignDocRequest):
+    """执行已确认的设计文档"""
+    from minghua_evo.core.auto_updater import AutoUpdater
+    
+    updater = AutoUpdater()
+    result = updater.execute_design(request.filename)
+    
+    return result

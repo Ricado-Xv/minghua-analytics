@@ -167,8 +167,8 @@ class Intent:
 # 编译正则规则
 # ========================================
 
-def compile_rules() -> Dict[IntentType, List]:
-    """编译正则规则"""
+def compile_rules() -> Dict:
+    """编译正则规则，包含优先级"""
     compiled = {}
     
     for intent_name, config in INTENT_RULES.items():
@@ -182,14 +182,20 @@ def compile_rules() -> Dict[IntentType, List]:
         # 添加 keyword 精确匹配
         keywords = config.get("keywords", [])
         for kw in keywords:
-            patterns.append((kw, re.escape(kw)))
+            patterns.append((kw, re.escape(kw), 0.95))
         
         # 添加正则表达式
         regex_list = config.get("patterns", [])
         for pattern in regex_list:
-            patterns.append((pattern, pattern))
+            patterns.append((pattern, pattern, 0.9))
         
-        compiled[intent_type] = patterns
+        # 获取优先级，默认为 0
+        priority = config.get("priority", 0)
+        
+        compiled[intent_type] = {
+            "patterns": patterns,
+            "priority": priority
+        }
     
     return compiled
 
@@ -269,26 +275,34 @@ class IntentClassifier:
         )
 
     def _regex_match(self, message: str) -> tuple:
-        """正则匹配"""
+        """正则匹配（支持优先级）"""
         best_match = None
-        best_confidence = 0.0
+        best_score = 0.0  # 综合分数 = 置信度 + 优先级*0.1
         best_params = {}
         
-        for intent_type, patterns in _COMPILED_RULES.items():
-            for keyword, pattern in patterns:
+        for intent_type, rule in _COMPILED_RULES.items():
+            patterns = rule.get("patterns", [])
+            priority = rule.get("priority", 0)
+            
+            for keyword, pattern, base_confidence in patterns:
                 if re.search(pattern, message):
                     # 提取参数
                     params = self._extract_params(message, intent_type)
                     
-                    # 关键词匹配置信度高于正则
-                    confidence = 0.95 if keyword == message else 0.9
+                    # 置信度
+                    confidence = base_confidence if keyword != message else 0.95
                     
-                    if confidence > best_confidence:
+                    # 综合分数 = 置信度 + 优先级
+                    score = confidence + priority * 0.1
+                    
+                    if score > best_score:
                         best_match = intent_type
-                        best_confidence = confidence
+                        best_score = score
                         best_params = params
         
-        return best_match, best_confidence, best_params
+        if best_match:
+            return best_match, best_score, best_params
+        return None, 0.0, {}
 
     def _ai_classify(self, message: str) -> Optional[Intent]:
         """AI 识别 - One-shot 模式（无记忆）"""

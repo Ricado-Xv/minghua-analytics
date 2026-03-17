@@ -24,3 +24,10 @@ __pycache__/
 # 本地配置（复制 config_template.py 为 config.py 使用）
 src/config.py
 stores.json
+
+# 运行时生成的文件
+design/_status.json
+design/changelog.md
+data/feedback/*.json
+config/backups/
+
