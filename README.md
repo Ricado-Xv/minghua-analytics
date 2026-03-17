@@ -195,9 +195,15 @@ python3 server.py
 ### 3. 首次配置（可选）
 
 ```bash
-# 创建测试 Agent
-openclaw agents add test-agent --workspace /path/to/茗花by_claw --model MiniMax-M2.5
+# 创建测试 Agent（workspace 指向插件目录）
+openclaw agents add test-agent --workspace /path/to/茗花by_claw/minghua_evo --model MiniMax-M2.5
+
+# 这样 agent 可以访问：
+# - 插件代码（当前目录）
+# - 宿主项目（../）
 ```
+
+**说明**：test-agent 的 workspace 设置为 `minghua_evo/` 目录，可通过 `../` 访问宿主项目（如 `../src/`）。
 
 ---
 
