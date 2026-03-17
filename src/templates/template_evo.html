@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>茗花汇报查看器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+    .app-container { display: flex; flex-direction: column; height: 100vh; }
+    
+    /* 顶部Header */
+    .app-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .app-header h1 { font-size: 24px; }
+    
+    /* 主体布局 */
+    .app-main { display: flex; flex: 1; overflow: hidden; }
+    
+    /* 左侧控制面板 */
+    .control-panel { width: 360px; border-right: 1px solid #e0e0e0; background: white; display: flex; flex-direction: column; overflow-y: auto; }
+    .panel-section { padding: 20px; border-bottom: 1px solid #eee; }
+    .panel-section:last-child { border-bottom: none; }
+    .section-title { font-size: 14px; color: #888; margin-bottom: 12px; font-weight: 600; }
+    
+    /* 选择器样式 */
+    .selector-group { margin-bottom: 16px; }
+    .selector-group:last-child { margin-bottom: 0; }
+    .selector-label { display: block; font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500; }
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:hover { border-color: #667eea; }
+    select:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+    
+    /* 快速操作按钮 */
+    .quick-actions { display: flex; flex-direction: column; gap: 8px; }
+    .quick-btn {
+      padding: 12px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      text-align: left;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .quick-btn:hover { border-color: #667eea; background: #f8f9ff; }
+    .quick-btn.active { border-color: #667eea; background: #f0f3ff; color: #667eea; }
+    .quick-btn .icon { font-size: 18px; }
+    
+    /* 店铺类型筛选 */
+    .store-filter { display: flex; gap: 8px; }
+    .filter-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: #667eea; }
+    .filter-btn.active { border-color: #667eea; background: #667eea; color: white; }
+    
+    /* 右侧内容区 */
+    .content-section { flex: 1; background: #f9f9f9; overflow-y: auto; padding: 20px; }
+    
+    /* 空状态 */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #888; }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+    
+    /* 报告卡片 */
+    .report-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; }
+    .report-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .report-title { font-size: 18px; font-weight: 600; }
+    .report-file { font-size: 12px; opacity: 0.8; }
+    
+    /* 统计卡片 */
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
+    .summary-card { background: linear-gradient(135deg, #f5f7fa, #e4e8ec); border-radius: 12px; padding: 20px; text-align: center; }
+    .card-icon { font-size: 28px; margin-bottom: 8px; }
+    .card-value { font-size: 24px; font-weight: 700; color: #333; }
+    .card-label { font-size: 12px; color: #666; margin-top: 4px; }
+    
+    /* 数据区块 */
+    .data-section { padding: 0 20px 20px; }
+    .data-section h4 { font-size: 16px; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #667eea; }
+    .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .data-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #667eea; }
+    .data-table td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+    .data-table tr:hover { background: #f8f9ff; }
+    
+    /* 报告文本 */
+    .report-text { padding: 20px; }
+    .report-text pre { background: #f8f9fa; padding: 16px; border-radius: 8px; white-space: pre-wrap; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6; }
+    
+    /* 跨周对比样式 */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 20px 0; }
+    .compare-box { padding: 16px; border-radius: 12px; text-align: center; }
+    .compare-box.week1 { background: #f5f5f5; }
+    .compare-box.week2 { background: #e8f4ff; }
+    .compare-label { font-size: 12px; color: #666; margin-bottom: 8px; }
+    .compare-value { font-size: 20px; font-weight: 700; }
+    .compare-amount { color: #666; font-size: 14px; }
+    
+    .trend-box { margin: 16px 20px; padding: 16px; border-radius: 12px; text-align: center; }
+    .trend-box.up { background: #d1fae5; }
+    .trend-box.down { background: #fee2e2; }
+    .trend-icon { font-size: 24px; margin-bottom: 8px; }
+    .trend-value { font-size: 22px; font-weight: 700; }
+    .trend-box.up .trend-value { color: #10b981; }
+    .trend-box.down .trend-value { color: #ef4444; }
+    .trend-label { font-size: 12px; color: #666; margin-top: 4px; }
+    
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 20px; }
+    .type-box { padding: 16px; border-radius: 12px; text-align: center; }
+    .type-box.self { background: #fff3e0; }
+    .type-box.franchise { background: #e3f2fd; }
+    .type-icon { font-size: 24px; margin-bottom: 4px; }
+    .type-name { font-weight: 600; }
+    .type-box.self .type-name { color: #e65100; }
+    .type-box.franchise .type-name { color: #1565c0; }
+    .type-value { font-size: 16px; margin-top: 4px; }
+    
+    /* 月份选择器在顶部 */
+    .month-tabs { display: flex; gap: 8px; padding: 16px 20px; background: white; border-bottom: 1px solid #eee; overflow-x: auto; }
+    .month-tab { padding: 8px 16px; border: 1px solid #e0e0e0; border-radius: 20px; background: white; cursor: pointer; font-size: 14px; white-space: nowrap; transition: all 0.2s; }
+    .month-tab:hover { border-color: #667eea; }
+    .month-tab.active { border-color: #667eea; background: #667eea; color: white; }
+    
+    @media (max-width: 900px) {
+      .control-panel { width: 300px; }
+      .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .app-main { flex-direction: column; }
+      .control-panel { width: 100%; max-height: 40vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>🌸 茗花汇报查看器</h1>
+    </header>
+    
+    <!-- 月份标签 -->
+    <div class="month-tabs" id="monthTabs">
+      <!-- 动态生成月份标签 -->
+    </div>
+    
+    <main class="app-main">
+      <!-- 左侧控制面板 -->
+      <div class="control-panel">
+        
+        <!-- 报告类型选择 -->
+        <div class="panel-section">
+          <div class="section-title">📊 报告类型</div>
+          <div class="quick-actions" id="reportTypeButtons">
+            <button class="quick-btn active" data-type="week" onclick="selectReportType('week')">
+              <span class="icon">📊</span> 每周汇总
+            </button>
+            <button class="quick-btn" data-type="cross" onclick="selectReportType('cross')">
+              <span class="icon">📈</span> 跨周对比
+            </button>
+            <button class="quick-btn" data-type="monthly" onclick="selectReportType('monthly')">
+              <span class="icon">📅</span> 月度汇总
+            </button>
+          </div>
+        </div>
+        
+        <!-- 周数选择 -->
+        <div class="panel-section" id="weekSection">
+          <div class="section-title">📆 选择周数</div>
+          <div class="selector-group">
+            <select id="weekSelect" onchange="loadReport()">
+              <!-- 动态生成 -->
+            </select>
+          </div>
+        </div>
+        
+        <!-- 店铺类型筛选 -->
+        <div class="panel-section">
+          <div class="section-title">🏪 店铺类型</div>
+          <div class="store-filter">
+            <button class="filter-btn active" data-filter="all" onclick="setStoreFilter('all')">全部</button>
+            <button class="filter-btn" data-filter="自营" onclick="setStoreFilter('自营')">🏭 自营</button>
+            <button class="filter-btn" data-filter="加盟" onclick="setStoreFilter('加盟')">🔗 加盟</button>
+          </div>
+        </div>
+        
+        <!-- 全局跨周对比 -->
+        <div class="panel-section" id="globalCrossSection" style="display:none;">
+          <div class="section-title">🌐 全局对比</div>
+          <button class="quick-btn" onclick="loadGlobalCross()">
+            <span class="icon">🌐</span> 查看全局跨周对比
+          </button>
+        </div>
+        
+      </div>
+      
+      <!-- 右侧内容区 -->
+      <div class="content-section" id="contentSection">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3>选择报告查看详情</h3>
+          <p>从左侧选择报告类型和条件</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 全局数据
+    let monthData = {{MONTH_DATA}};
+    let currentMonth = null;
+    let currentType = 'week';
+    let currentFilter = 'all';
+    
+    // 初始化
+    function init() {
+      renderMonthTabs();
+      if (Object.keys(monthData).length > 0) {
+        currentMonth = Object.keys(monthData)[0];
+        selectMonth(currentMonth);
+      }
+    }
+    
+    // 渲染月份标签
+    function renderMonthTabs() {
+      const container = document.getElementById('monthTabs');
+      const months = Object.keys(monthData);
+      container.innerHTML = months.map(m => 
+        `<button class="month-tab" data-month="${m}" onclick="selectMonth('${m}')">📅 ${m}</button>`
+      ).join('');
+    }
+    
+    // 选择月份
+    function selectMonth(month) {
+      currentMonth = month;
+      document.querySelectorAll('.month-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.month === month);
+      });
+      loadReport();
+    }
+    
+    // 选择报告类型
+    function selectReportType(type) {
+      currentType = type;
+      document.querySelectorAll('#reportTypeButtons .quick-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+      });
+      
+      // 显示/隐藏周数选择
+      document.getElementById('weekSection').style.display = 
+        (type === 'week') ? 'block' : 'none';
+      
+      // 全局跨周对比
+      document.getElementById('globalCrossSection').style.display = 
+        (type === 'cross' && monthData[currentMonth]?.cross) ? 'block' : 'none';
+      
+      loadReport();
+    }
+    
+    // 设置店铺筛选
+    function setStoreFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+      loadReport();
+    }
+    
+    // 加载报告
+    function loadReport() {
+      const section = document.getElementById('contentSection');
+      
+      if (!currentMonth || !monthData[currentMonth]) {
+        section.innerHTML = '<div class="empty-state"><p>暂无数据</p></div>';
+        return;
+      }
+      
+      const data = monthData[currentMonth];
+      
+      if (currentType === 'week') {
+        const weeks = data.weeks || [];
+        const select = document.getElementById('weekSelect');
+        
+        // 重新渲染周选择器
+        if (select) {
+          select.innerHTML = weeks.map((w, i) => 
+            `<option value="${i}">${w.title}</option>`
+          ).join('');
+        }
+        
+        const idx = select?.value || 0;
+        const week = weeks[idx];
+        
+        if (week) {
+          renderReportCard(section, {
+            title: week.title,
+            file: week.file,
+            content: filterContent(week.content)
+          });
+        } else {
+          section.innerHTML = '<div class="empty-state"><p>暂无周报数据</p></div>';
+        }
+      }
+      else if (currentType === 'cross') {
+        const cross = data.cross;
+        if (cross) {
+          renderCrossReport(section, cross);
+        } else {
+          section.innerHTML = '<div class="empty-state"><p>暂无跨周对比数据</p></div>';
+        }
+      }
+      else if (currentType === 'monthly') {
+        const monthly = data.monthly;
+        if (monthly) {
+          renderReportCard(section, {
+            title: monthly.title,
+            file: monthly.file,
+            content: filterContent(monthly.content)
+          });
+        } else {
+          section.innerHTML = '<div class="empty-state"><p>暂无月度汇总数据</p></div>';
+        }
+      }
+    }
+    
+    // 加载全局跨周对比
+    function loadGlobalCross() {
+      const section = document.getElementById('contentSection');
+      const globalCross = {{GLOBAL_CROSS_JSON}};
+      if (globalCross) {
+        renderCrossReport(section, globalCross);
+      }
+    }
+    
+    // 过滤内容（根据店铺类型）
+    function filterContent(content) {
+      if (currentFilter === 'all') return content;
+      
+      const lines = content.split('\n');
+      const filtered = [];
+      const sectionHeaders = [
+        '【每周整体情况】', '【环比变化】', '【整体趋势】', '【平均周量】',
+        '【日均进货金额对比】', '【水果种类变化】', '【水果金额环比变化】',
+        '【店铺金额环比变化】', '【店铺对比】', '【按店铺汇总】', '【各店进货情况】'
+      ];
+      
+      let inSection = false;
+      
+      for (const line of lines) {
+        // 检查是否进入/退出段落
+        const isHeader = sectionHeaders.some(h => line.includes(h));
+        if (isHeader) {
+          inSection = true;
+          filtered.push(line);
+          continue;
+        }
+        
+        // 检查是否遇到新的段落标题
+        if (inSection && line.match(/^【.*】$/)) {
+          inSection = false;
+        }
+        
+        // 非段落中或段落内但不过滤的内容
+        if (!inSection) {
+          filtered.push(line);
+          continue;
+        }
+        
+        // 段落内：按店铺类型过滤
+        const isSelfOp = line.includes('🏭') || line.includes('自营');
+        const isFranchise = line.includes('🔗') || line.includes('加盟');
+        const isTotal = line.match(/^[-\s]*(总计|合计)/) || line.includes('├─') || line.includes('└─');
+        
+        if (isTotal) {
+          // 汇总行根据筛选类型决定
+          if (currentFilter === '自营') {
+            if (!isFranchise || isSelfOp) filtered.push(line);
+          } else if (currentFilter === '加盟') {
+            if (!isSelfOp || isFranchise) filtered.push(line);
+          } else {
+            filtered.push(line);
+          }
+        } else {
+          // 非汇总行
+          if (currentFilter === 'all') {
+            filtered.push(line);
+          } else if (currentFilter === '自营') {
+            if (isSelfOp || (!isFranchise && !line.includes('🔗'))) filtered.push(line);
+          } else if (currentFilter === '加盟') {
+            if (isFranchise || (!isSelfOp && !line.includes('🏭'))) filtered.push(line);
+          }
+        }
+      }
+      
+      return filtered.join('\n');
+    }
+    
+    // 渲染普通报告卡片
+    function renderReportCard(container, data) {
+      const html = `
+        <div class="report-card">
+          <div class="report-header">
+            <span class="report-title">${data.title}</span>
+            <span class="report-file">${data.file}</span>
+          </div>
+          <div class="report-text">
+            <pre>${escapeHtml(data.content)}</pre>
+          </div>
+        </div>
+      `;
+      container.innerHTML = html;
+    }
+    
+    // 渲染跨周对比卡片（带统计卡片）
+    function renderCrossReport(container, data) {
+      const content = data.content || '';
+      
+      // 解析数据
+      let w1Qty = '-', w1Amt = '-', w2Qty = '-', w2Amt = '-';
+      let trendVal = '0', trendPct = '0';
+      let ziying = '-', jiameng = '-';
+      
+      // 第一周数据
+      let m = content.match(/3月第一周[^计]*计[：:]\s*([0-9.]+)\s*斤[^¥]*¥\s*([0-9.]+)/);
+      if (m) { w1Qty = m[1]; w1Amt = m[2]; }
+      
+      // 第二周数据
+      m = content.match(/3月第二周[^计]*计[：:]\s*([0-9.]+)\s*斤[^¥]*¥\s*([0-9.]+)/);
+      if (m) { w2Qty = m[1]; w2Amt = m[2]; }
+      
+      // 环比变化
+      m = content.match(/总计[：:]\s*¥?\s*([+-]?[0-9.]+)[^\(]*\(\s*([+-]?[0-9.]+)%\s*\)/);
+      if (m) { trendVal = m[1]; trendPct = m[2]; }
+      
+      // 自营
+      m = content.match(/自营[：:]\s*¥?\s*([0-9.]+)/);
+      if (m) { ziying = m[1]; }
+      
+      // 加盟
+      m = content.match(/加盟[：:]\s*¥?\s*([0-9.]+)/);
+      if (m) { jiameng = m[1]; }
+      
+      const isUp = parseFloat(trendVal) >= 0;
+      const trendClass = isUp ? 'up' : 'down';
+      const trendIcon = isUp ? '📈' : '📉';
+      
+      let html = `
+        <div class="report-card">
+          <div class="report-header">
+            <span class="report-title">${data.title || '📈 跨周对比'}</span>
+            <span class="report-file">${data.file || ''}</span>
+          </div>
+          
+          <div class="compare-grid">
+            <div class="compare-box week1">
+              <div class="compare-label">第一周</div>
+              <div class="compare-value">${w1Qty} 斤</div>
+              <div class="compare-amount">¥${w1Amt}</div>
+            </div>
+            <div class="compare-box week2">
+              <div class="compare-label">第二周</div>
+              <div class="compare-value">${w2Qty} 斤</div>
+              <div class="compare-amount">¥${w2Amt}</div>
+            </div>
+          </div>
+          
+          <div class="trend-box ${trendClass}">
+            <div class="trend-icon">${trendIcon}</div>
+            <div class="trend-value">${isUp ? '+' : ''}¥${trendVal} (${isUp ? '+' : ''}${trendPct}%)</div>
+            <div class="trend-label">环比变化</div>
+          </div>
+      `;
+      
+      // 自营加盟
+      if (ziying !== '-' || jiameng !== '-') {
+        html += `
+          <div class="type-grid">
+            <div class="type-box self">
+              <div class="type-icon">🏭</div>
+              <div class="type-name">自营</div>
+              <div class="type-value">¥${ziying}</div>
+            </div>
+            <div class="type-box franchise">
+              <div class="type-icon">🔗</div>
+              <div class="type-name">加盟</div>
+              <div class="type-value">¥${jiameng}</div>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += `
+          <div class="report-text">
+            <pre>${escapeHtml(content)}</pre>
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+    }
+    
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // 启动
+    init();
+  </script>
+</body>
+</html>
