@@ -5,12 +5,64 @@
     "ai_intent": "CUSTOM",
     "correct_intent": "VIEW_WEEKLY_REPORT",
     "user_input": "查看3月第一周数据",
-    "comment": "应该识别为周报"
+    "comment": "应该识别为周报",
+    "processed": true,
+    "processed_at": "2026-03-18T00:43:26.744857"
   },
   {
     "timestamp": "2026-03-17T23:48:39.317954",
     "message": "上个月的数据分析",
     "ai_intent": "VIEW_MONTHLY_REPORT",
-    "correct_intent": "上个月的月报"
+    "correct_intent": "上个月的月报",
+    "processed": true,
+    "processed_at": "2026-03-18T00:43:26.744865"
+  },
+  {
+    "timestamp": "2026-03-18T19:49:10.197005",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确",
+    "processed": true,
+    "processed_at": "2026-03-18T19:49:10.500000"
+  },
+  {
+    "timestamp": "2026-03-18T19:49:11.746852",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确",
+    "processed": true,
+    "processed_at": "2026-03-18T19:49:12.000000"
+  },
+  {
+    "timestamp": "2026-03-18T20:00:00.000000",
+    "message": "查下上月销售",
+    "ai_intent": "CUSTOM",
+    "correct_intent": "VIEW_MONTHLY_REPORT",
+    "user_input": "查下上月销售",
+    "comment": "应该是月报",
+    "processed": true,
+    "processed_at": "2026-03-18T20:00:58.231945"
+  },
+  {
+    "timestamp": "2026-03-18T20:01:00.000000",
+    "message": "给我看看3月份的生意",
+    "ai_intent": "CUSTOM",
+    "correct_intent": "VIEW_MONTHLY_REPORT",
+    "user_input": "给我看看3月份的生意",
+    "comment": "想要月度报告",
+    "processed": true,
+    "processed_at": "2026-03-18T20:00:58.231948"
+  },
+  {
+    "timestamp": "2026-03-18T20:02:00.000000",
+    "message": "苹果卖了多少",
+    "ai_intent": "CUSTOM",
+    "correct_intent": "VIEW_FRUITS",
+    "user_input": "苹果卖了多少",
+    "comment": "水果查询",
+    "processed": true,
+    "processed_at": "2026-03-18T20:00:58.231949"
   }
 ]

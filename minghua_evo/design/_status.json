@@ -1,0 +1,10 @@
+{
+  "documents": {
+    "intent_improvement_20260318_004326.md": {
+      "status": "confirmed",
+      "confirmed_at": "2026-03-18T01:09:04.781547",
+      "confirmed_by": "engineer",
+      "executed": false
+    }
+  }
+}
