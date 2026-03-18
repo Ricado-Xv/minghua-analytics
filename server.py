@@ -43,6 +43,14 @@ def start_evolution_server():
     app = FastAPI(title="茗花智能汇报系统", description="可自我进化的智能汇报Web应用", version="0.1.0")
     app.include_router(router)
 
+    @app.get("/viewer.html")
+    async def serve_viewer():
+        """服务原版数据查看器页面"""
+        viewer_path = os.path.join(PROJECT_ROOT, "src", "templates", "viewer.html")
+        if os.path.exists(viewer_path):
+            return FileResponse(viewer_path, media_type="text/html")
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_static(full_path: str):
         if full_path.startswith('api/'):

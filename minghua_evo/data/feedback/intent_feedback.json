@@ -64,5 +64,68 @@
     "comment": "水果查询",
     "processed": true,
     "processed_at": "2026-03-18T20:00:58.231949"
+  },
+  {
+    "timestamp": "2026-03-18T20:24:02.493767",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T20:24:04.123796",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T20:24:04.406027",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T20:49:07.707733",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T20:57:22.595335",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T21:09:57.619590",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T21:09:58.882881",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T21:09:59.632500",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
+  },
+  {
+    "timestamp": "2026-03-18T21:10:00.048272",
+    "message": "周报",
+    "ai_intent": "VIEW_WEEKLY_REPORT",
+    "correct_intent": "VIEW_WEEKLY_REPORT",
+    "comment": "用户确认正确"
   }
 ]

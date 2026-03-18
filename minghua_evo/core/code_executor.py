@@ -1,6 +1,6 @@
 """
 代码执行器
-通过数据提供程序接口获取数据，实现与原版的深度解耦
+通过数据提供程序接口获取数据，实现与数据源的解耦
 """
 import os
 import sys
@@ -9,9 +9,9 @@ from typing import Dict, Any, Callable, Optional
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 导入数据提供程序（通过 HTTP API，不再直接依赖原版）
+# 导入数据提供程序（通过抽象接口，支持多数据源）
 from minghua_evo.services.data_provider import (
-    get_provider, DataProvider, WeekData, CrossWeekData, MonthlyData
+    get_provider, DataProvider
 )
 
 
@@ -34,38 +34,32 @@ def handle_weekly_report(params: Dict, provider: DataProvider = None) -> Executi
             return ExecutionResult(
                 success=False, 
                 data=None, 
-                reply="数据服务未启动，请运行原版 data_api.py",
+                reply="数据服务未启动，请检查 data_provider 配置",
                 error="API not available"
             )
         
         # 获取参数
         month = params.get("month")
         week = params.get("week")
-        week_offset = params.get("week_offset", 0)  # 0=本周, -1=上一周, 1=下一周
+        week_offset = params.get("week_offset", 0)
         
         # 转换数字周为中文周
         if week:
             cn_week_map = {"1": "第一周", "2": "第二周", "3": "第三周", "4": "第四周", "5": "第五周"}
             week = cn_week_map.get(week, f"第{week}周")
         
-        # 如果指定了 week_offset，需要计算实际周数
-        # 默认获取本周数据，如果week_offset为-1则获取上一周
-        week_data = provider.get_weekly_report(month=month, week=week, week_offset=week_offset)
+        # 直接返回 API 原始数据
+        result_data = provider.get_weekly_report(month=month, week=week, week_offset=week_offset)
         
-        result_data = {
-            "type": "weekly",
-            "week": week_data.week,
-            "month": week_data.month,
-            "summary": week_data.summary,
-            "stores": week_data.stores,
-            "fruit_stats": week_data.fruit_stats
-        }
+        # 提取关键字段用于回复
+        display_month = result_data.get("month", month or "未知")
+        display_week = result_data.get("week", week or "未知")
 
         return ExecutionResult(
             success=True, 
             data=result_data, 
-            reply=f"为您查询 {week_data.month} {week_data.week} 数据", 
-            render_type="chart"
+            reply=f"为您查询 {display_month} {display_week} 数据", 
+            render_type="auto"
         )
 
     except Exception as e:
@@ -86,25 +80,16 @@ def handle_monthly_report(params: Dict, provider: DataProvider = None) -> Execut
             )
         
         month = params.get("month")
-        monthly_data = provider.get_monthly_report(month=month)
+        # 直接返回 API 原始数据
+        result_data = provider.get_monthly_report(month=month)
         
-        result_data = {
-            "type": "monthly",
-            "month": monthly_data.month,
-        }
-        
-        if monthly_data.summary:
-            result_data["summary"] = monthly_data.summary
-        if monthly_data.stores:
-            result_data["stores"] = monthly_data.stores
-        if monthly_data.fruits:
-            result_data["fruits"] = monthly_data.fruits
+        display_month = result_data.get("month", month or "未知")
 
         return ExecutionResult(
             success=True, 
             data=result_data, 
-            reply=f"为您查询 {monthly_data.month} 月度数据", 
-            render_type="chart"
+            reply=f"为您查询 {display_month} 月度数据", 
+            render_type="auto"
         )
 
     except Exception as e:
@@ -125,21 +110,14 @@ def handle_cross_week(params: Dict, provider: DataProvider = None) -> ExecutionR
             )
         
         month = params.get("month")
-        cross_data = provider.get_cross_week_report(month=month)
-        
-        result_data = {
-            "type": "cross_week",
-            "month": cross_data.month,
-            "weeks": cross_data.weeks,
-            "summary": cross_data.summary,
-            "stores": cross_data.stores
-        }
+        result_data = provider.get_cross_week_report(month=month)
+        display_month = result_data.get("month", month or "未知")
 
         return ExecutionResult(
             success=True, 
             data=result_data, 
-            reply=f"为您查询 {cross_data.month} 跨周对比数据", 
-            render_type="table"
+            reply=f"为您查询 {display_month} 跨周对比数据", 
+            render_type="auto"
         )
 
     except Exception as e:
@@ -160,21 +138,18 @@ def handle_query_stores(params: Dict, provider: DataProvider = None) -> Executio
             )
         
         target_stores = params.get("stores", [])
-        stores = provider.get_stores()
+        result_data = provider.get_stores()
         
+        stores = result_data.get("stores", [])
         if target_stores:
             stores = [s for s in stores if s.get('店铺') in target_stores]
-
-        result_data = {
-            "type": "stores",
-            "data": stores
-        }
+            result_data["stores"] = stores
 
         return ExecutionResult(
             success=True, 
             data=result_data, 
             reply=f"为您查询到 {len(stores)} 条店铺数据", 
-            render_type="table"
+            render_type="auto"
         )
 
     except Exception as e:
@@ -194,18 +169,14 @@ def handle_query_fruits(params: Dict, provider: DataProvider = None) -> Executio
                 error="API not available"
             )
         
-        fruits = provider.get_fruits()
-
-        result_data = {
-            "type": "fruits",
-            "data": fruits
-        }
+        result_data = provider.get_fruits()
+        fruits = result_data.get("fruits", [])
 
         return ExecutionResult(
             success=True, 
             data=result_data, 
             reply=f"为您查询到 {len(fruits)} 种水果数据", 
-            render_type="chart"
+            render_type="auto"
         )
 
     except Exception as e:
@@ -267,14 +238,13 @@ def handle_custom(params: Dict, provider: DataProvider = None, raw_message: str 
 class CodeExecutor:
     def __init__(self, project_root: str = None, api_host: str = None):
         self.project_root = project_root or PROJECT_ROOT
-        self.api_host = api_host
         self.handlers: Dict[str, Callable] = {}
         self._provider = None
         self._register_default_handlers()
 
     def _get_provider(self) -> DataProvider:
         if self._provider is None:
-            self._provider = get_provider(self.api_host)
+            self._provider = get_provider()
         return self._provider
 
     def _register_default_handlers(self):

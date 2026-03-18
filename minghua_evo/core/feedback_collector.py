@@ -3,6 +3,7 @@
 
 功能：
 - 收集用户对识别结果的反馈
+- 收集用户新功能需求
 - 支持用户自定义正确的意图和输入内容
 - 存储反馈数据供进化引擎使用
 """
@@ -28,6 +29,19 @@ class IntentFeedback:
             self.timestamp = datetime.now().isoformat()
 
 
+@dataclass
+class NewRequirement:
+    """新功能需求"""
+    original_message: str  # 用户原始输入
+    requirement: str  # 用户描述的需求
+    description: Optional[str] = None  # 详细说明
+    timestamp: str = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now().isoformat()
+
+
 class FeedbackCollector:
     """反馈收集器"""
     
@@ -39,6 +53,7 @@ class FeedbackCollector:
         
         self.data_dir = data_dir
         self.feedback_file = os.path.join(data_dir, "intent_feedback.json")
+        self.requirements_file = os.path.join(data_dir, "requirements.json")
         
         # 确保目录存在
         os.makedirs(data_dir, exist_ok=True)
@@ -46,6 +61,10 @@ class FeedbackCollector:
         # 初始化文件
         if not os.path.exists(self.feedback_file):
             with open(self.feedback_file, 'w', encoding='utf-8') as f:
+                json.dump([], f, ensure_ascii=False, indent=2)
+        
+        if not os.path.exists(self.requirements_file):
+            with open(self.requirements_file, 'w', encoding='utf-8') as f:
                 json.dump([], f, ensure_ascii=False, indent=2)
     
     def add_feedback(
@@ -132,6 +151,66 @@ class FeedbackCollector:
         """清空所有反馈"""
         with open(self.feedback_file, 'w', encoding='utf-8') as f:
             json.dump([], f, ensure_ascii=False, indent=2)
+    
+    # ==================== 新需求收集 ====================
+    
+    def add_requirement(
+        self,
+        original_message: str,
+        requirement: str,
+        description: str = None
+    ) -> bool:
+        """
+        添加新功能需求
+        
+        Args:
+            original_message: 用户原始输入
+            requirement: 用户描述的需求
+            description: 详细说明
+            
+        Returns:
+            是否成功
+        """
+        try:
+            requirements = self._load_requirements()
+            
+            new_req = {
+                "timestamp": datetime.now().isoformat(),
+                "type": "new_requirement",
+                "original_message": original_message,
+                "requirement": requirement,
+            }
+            
+            if description:
+                new_req["description"] = description
+            
+            requirements.append(new_req)
+            
+            with open(self.requirements_file, 'w', encoding='utf-8') as f:
+                json.dump(requirements, f, ensure_ascii=False, indent=2)
+            
+            return True
+            
+        except Exception as e:
+            print(f"[FeedbackCollector] 添加需求失败: {e}")
+            return False
+    
+    def _load_requirements(self) -> List[dict]:
+        """加载所有需求"""
+        try:
+            with open(self.requirements_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    
+    def get_requirements(self) -> List[dict]:
+        """获取所有新功能需求"""
+        return self._load_requirements()
+    
+    def get_unprocessed_requirements(self) -> List[dict]:
+        """获取未处理的需求"""
+        requirements = self._load_requirements()
+        return [r for r in requirements if not r.get("processed", False)]
 
 
 # 单例

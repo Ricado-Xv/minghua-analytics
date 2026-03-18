@@ -83,6 +83,86 @@ class EvolutionEngine:
         self.is_running = False
         self.last_run = None
         self.current_version = "v0.1"
+        
+        # 进化进度状态
+        self.progress = {
+            "status": "idle",  # idle / analyzing / generating / completed / error
+            "step": "",
+            "message": "",
+            "percentage": 0
+        }
+
+    def get_progress(self) -> dict:
+        """获取进化进度"""
+        return self.progress
+    
+    def update_progress(self, status: str, step: str, message: str, percentage: int):
+        """更新进化进度"""
+        self.progress = {
+            "status": status,
+            "step": step,
+            "message": message,
+            "percentage": percentage
+        }
+
+    def trigger_from_requirements(self, requirements: List[dict]) -> dict:
+        """从需求生成文档"""
+        if self.is_running:
+            return {"status": "running", "message": "进化任务正在执行中"}
+        
+        if not requirements:
+            return {"status": "completed", "message": "暂无新需求", "step": "check"}
+        
+        self.is_running = True
+        self.progress = {"status": "running", "step": "analyzing", "message": "正在分析需求...", "percentage": 10}
+        
+        try:
+            # 步骤1：分析需求
+            self.update_progress("analyzing", "analyzing", "正在分析需求...", 30)
+            analyzed = self._analyze_requirements(requirements)
+            
+            # 步骤2：生成需求文档
+            self.update_progress("generating", "requirements", "正在生成需求文档...", 50)
+            from minghua_evo.core.requirements_doc_generator import RequirementsDocGenerator
+            gen = RequirementsDocGenerator()
+            req_result = gen.generate_from_requirements(analyzed)
+            
+            # 步骤3：生成设计文档
+            self.update_progress("generating", "design", "正在生成设计文档...", 80)
+            des_result = gen.generate_design_from_requirements(analyzed, req_result.get("requirements", ""))
+            
+            # 完成
+            self.update_progress("completed", "done", "文档生成完成！", 100)
+            self.last_run = datetime.now().isoformat()
+            
+            return {
+                "status": "completed",
+                "message": "需求文档和设计文档已生成",
+                "requirements_file": req_result.get("requirements_file"),
+                "design_file": des_result.get("design_file"),
+                "summary": {
+                    "requirements_count": len(requirements),
+                    "analyzed_items": len(analyzed)
+                }
+            }
+            
+        except Exception as e:
+            self.update_progress("error", "error", f"生成失败: {str(e)}", 0)
+            return {"status": "error", "message": str(e)}
+        finally:
+            self.is_running = False
+
+    def _analyze_requirements(self, requirements: List[dict]) -> List[dict]:
+        """分析需求"""
+        analyzed = []
+        for req in requirements:
+            analyzed.append({
+                "original_message": req.get("original_message", ""),
+                "requirement": req.get("requirement", ""),
+                "description": req.get("description", ""),
+                "timestamp": req.get("timestamp", "")
+            })
+        return analyzed
 
     def trigger_manual(self, conversation_logger=None) -> dict:
         if self.is_running:

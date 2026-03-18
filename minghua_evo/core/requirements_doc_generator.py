@@ -29,11 +29,9 @@ class RequirementsDocGenerator:
             self.project_root, "data", "feedback", "intent_feedback.json"
         )
         self.design_dir = os.path.join(self.project_root, "design")
-        self.docs_dir = os.path.join(self.project_root, "..", "docs")  # 茗花by_claw/docs/
         
         # 确保目录存在
         os.makedirs(self.design_dir, exist_ok=True)
-        os.makedirs(self.docs_dir, exist_ok=True)
     
     def load_feedbacks(self) -> List[Dict]:
         """加载所有反馈"""
@@ -254,20 +252,9 @@ class RequirementsDocGenerator:
         with open(des_filepath, 'w', encoding='utf-8') as f:
             f.write(des_content)
         
-        # 同步到 docs 目录（最新版本）
-        latest_req = os.path.join(self.docs_dir, "requirements_latest.md")
-        latest_des = os.path.join(self.docs_dir, "design_latest.md")
-        
-        with open(latest_req, 'w', encoding='utf-8') as f:
-            f.write(req_content)
-        with open(latest_des, 'w', encoding='utf-8') as f:
-            f.write(des_content)
-        
         return {
             "requirements_file": req_filepath,
-            "design_file": des_filepath,
-            "latest_requirements": latest_req,
-            "latest_design": latest_des
+            "design_file": des_filepath
         }
     
     def mark_processed(self, feedbacks: List[Dict]):
@@ -328,6 +315,124 @@ class RequirementsDocGenerator:
             "latest_design": files["latest_design"],
             "requirements": requirements,
             "design": design
+        }
+
+    def generate_from_requirements(self, requirements: List[Dict]) -> Dict:
+        """从需求列表生成需求文档"""
+        if not requirements:
+            return {"success": False, "message": "暂无需求"}
+        
+        # 构建需求摘要
+        req_summary = "\n".join([
+            f"- 用户需求: `{r.get('requirement', '')}`"
+            f"  原始输入: `{r.get('original_message', '')}`"
+            f"  详细说明: {r.get('description', '无')}"
+            for r in requirements
+        ])
+        
+        prompt = f"""你是一个资深产品经理，为"茗花智能汇报系统"生成需求分析文档。
+
+## 现有系统背景
+- 水果进货数据管理系统 + 智能对话助手
+- 支持周报/月报/跨周对比/水果查询/店铺查询
+- 意图识别采用三级混合模式
+
+## 用户提交的需求
+{req_summary}
+
+请生成完整的**需求分析文档**，包含：
+1. 概述（背景、目标）
+2. 需求分析（每个需求的详细描述）
+3. 优先级（高/中/低）
+4. 实现建议
+
+用 Markdown 格式返回。"""
+        
+        requirements_content = self.call_ai(prompt)
+        
+        # 保存
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"requirements_{timestamp}.md"
+        filepath = os.path.join(self.design_dir, filename)
+        
+        content = f"""# 需求分析文档
+
+**生成时间**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+**需求数量**: {len(requirements)}
+
+---
+
+{requirements_content}
+
+---
+
+*本文档由进化引擎自动生成*
+"""
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return {
+            "success": True,
+            "requirements": requirements_content,
+            "requirements_file": filepath
+        }
+
+    def generate_design_from_requirements(self, requirements: List[Dict], requirements_content: str = "") -> Dict:
+        """从需求生成设计文档"""
+        if not requirements:
+            return {"success": False, "message": "暂无需求"}
+        
+        req_summary = "\n".join([
+            f"- 用户需求: `{r.get('requirement', '')}`"
+            for r in requirements
+        ])
+        
+        prompt = f"""你是一个资深架构师，为"茗花智能汇报系统"生成软件设计文档。
+
+## 现有系统架构
+- 茗花进化插件（三层架构：通用层 + 适配层 + API层）
+- 意图识别：三级混合模式
+- 进化机制：用户反馈 → AI分析 → 规则改进
+
+## 需要设计的需求
+{req_summary}
+
+请生成完整的**软件设计文档**，包含：
+1. 系统概述
+2. 模块设计
+3. 接口设计
+4. 数据流设计
+
+用 Markdown 格式返回。"""
+        
+        design_content = self.call_ai(prompt)
+        
+        # 保存
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"design_{timestamp}.md"
+        filepath = os.path.join(self.design_dir, filename)
+        
+        content = f"""# 软件设计文档
+
+**生成时间**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+---
+
+{design_content}
+
+---
+
+*本文档由进化引擎自动生成*
+"""
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return {
+            "success": True,
+            "design": design_content,
+            "design_file": filepath
         }
 
 

@@ -1,8 +1,55 @@
+# 宿主系统配置（前端）
+host_system:
+  # 项目名称
+  name: "茗花"
+  # 宿主系统前端地址
+  url: "http://localhost:3001"
+  # 页面映射配置（意图 -> 页面路径）
+  pages:
+    VIEW_WEEKLY_REPORT: "/viewer.html?type=weekly"
+    VIEW_MONTHLY_REPORT: "/viewer.html?type=monthly"
+    VIEW_CROSS_WEEK: "/viewer.html?type=cross_week"
+    QUERY_FRUITS: "/viewer.html?type=fruits"
+    QUERY_STORES: "/viewer.html?type=stores"
+  
+  # 宿主项目 API 接口
+  api:
+    # 项目信息接口
+    project_info: "/api/project-info"
+    # README 文档接口
+    readme: "/api/readme"
+    # 设计文档接口
+    design_doc: "/api/design-doc"
+
 # 系统设置
 openclaw:
   endpoint: "http://localhost:8080"
   model: "default"
   timeout: 60
+
+# 数据源配置
+data_provider:
+  # 数据源类型: http (HTTP API) / mock (模拟数据)
+  type: "http"
+  # HTTP API 配置
+  http:
+    host: "localhost"
+    port: 8081
+    # 完整 API 地址（优先级高于 host:port）
+    # base_url: "http://localhost:8081"
+    # API 端点配置
+    endpoints:
+      health: "/api/health"
+      months: "/api/months"
+      weeks: "/api/weeks"
+      weekly: "/api/weekly"
+      monthly: "/api/monthly"
+      cross_week: "/api/cross-week"
+      stores: "/api/stores"
+      fruits: "/api/fruits"
+  # Mock 数据配置（当 type 为 mock 时使用）
+  mock:
+    enabled: false
 
 # 意图识别配置
 intent_classifier:
